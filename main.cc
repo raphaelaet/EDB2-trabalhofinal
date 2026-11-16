@@ -1,4 +1,6 @@
 #include "geohash.h"
+#include "trie.h"
+#include "quadtree.h"
 
 #include <iostream>
 #include <utility>
