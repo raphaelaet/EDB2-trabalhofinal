@@ -53,6 +53,22 @@ int main(){
 	// 12 m - 3x2
 	auto const radius = 80;
 
-	mySearchNearby(me, radius, UNITS);
+	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
+	GeoHash::buffer_t testbuffer;
+	Trie raiz;
+	
+	//Podes tanto criar uma string_view quanto transformar em string (segunda linha).
+	//A primeira linha é a criação de um GeoHash sem ser baseado no struct "place" (local).
+	string_view testHash = GeoHash::encode(testPoint, 12, testbuffer);
+	string tHashString = string(testHash);
+	
+	raiz.adicionarReport(testHash);
+	raiz.procurarReport(testHash);
+	//Para poder usar escrita direta assim tive que diferenciar a busca entre string_view e string colocando "V" no final do nome do método para string_view
+    raiz.procurarPrefixo("sx8");
+	
+	//cout << testHash << endl;
+
+	//mySearchNearby(me, radius, UNITS);
 }
 
