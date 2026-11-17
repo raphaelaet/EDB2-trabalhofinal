@@ -36,8 +36,8 @@ public:
     ~Trie();
     
     //bool adicionarReport(NoTrie *raiz, string hash, int pos, string onde = "");
-    void adicionarReport(const string &hash);
-    void adicionarReport(const string_view &hash);
+    void adicionarReport(const string &hash, const Chamado &c);
+    void adicionarReport(const string_view &hash, const Chamado &c);
     
     void procurarReport(const string &hash);
     void procurarReport(const string_view &hash);
