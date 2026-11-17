@@ -216,7 +216,7 @@ bool Trie::procurarSilencioso(const string &hash){
         }
         
         if(atual->filhos[pos] == nullptr){
-            cout << "Reclamações para " << hash << " não existem.\n"; 
+            return false;
         }
         atual = atual->filhos[pos];
     }
@@ -240,7 +240,7 @@ bool Trie::procurarSilencioso(const string_view &hash){
         }
         
         if(atual->filhos[pos] == nullptr){
-            cout << "Reclamações para " << hash << " não existem.\n"; 
+            return false;
         }
         atual = atual->filhos[pos];
     }
