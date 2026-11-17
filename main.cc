@@ -54,7 +54,11 @@ int main(){
 	// 50 m - 2x2
 	// 12 m - 3x2
 	auto const radius = 80;
-
+	
+	Chamado c1 = {0, Tipo::Iluminacao, {42.69210669738513, 23.32489318092748}};
+	Chamado c2 = {0, Tipo::Agua, {42.69210669738513, 23.32489318092748}};
+	Chamado c3 = {0, Tipo::Buraco, {42.69210669738513, 23.32489318092748}};
+	
 	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
 	GeoHash::buffer_t testbuffer;
 	Trie raiz;
@@ -64,7 +68,9 @@ int main(){
 	string_view testHash = GeoHash::encode(testPoint, 12, testbuffer);
 	string tHashString = string(testHash);
 	
-	raiz.adicionarReport(testHash);
+	raiz.adicionarReport(testHash, c1);
+	raiz.adicionarReport(testHash, c2);
+	raiz.adicionarReport(testHash, c3);
 	raiz.procurarReport(testHash);
 	//Para poder usar escrita direta assim tive que diferenciar a busca entre string_view e string colocando "V" no final do nome do método para string_view
     raiz.procurarPrefixo("sx8");
