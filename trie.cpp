@@ -27,7 +27,7 @@ Trie::~Trie(){
     clear(raiz);
 }
 
-void Trie::adicionarReport(const string &hash){
+void Trie::adicionarReport(const string &hash, const Chamado &c){
     NoTrie *atual = raiz;
     int pos = -1;
 
@@ -47,12 +47,25 @@ void Trie::adicionarReport(const string &hash){
         //atual->meuHash = 
     }
     
+    switch(c.tipo){
+        case Tipo::Iluminacao:
+            atual->prioridadeIluminacao += 1;
+        break;
+        case Tipo::Agua:
+            atual->prioridadeAgua += 1;
+        break;
+        case Tipo::Buraco:
+            atual->prioridadeBuraco += 1;
+        break;
+        default: cout << "Houve erro." << endl;
+    }
+    
     atual->prioridade += 1;
     atual->meuHash = hash;
     atual->completo = true;
 }
 
-void Trie::adicionarReport(const string_view &hash){
+void Trie::adicionarReport(const string_view &hash, const Chamado &c){
     NoTrie *atual = raiz;
     int pos = -1;
 
@@ -72,10 +85,24 @@ void Trie::adicionarReport(const string_view &hash){
         //atual->meuHash = 
     }
     
+    switch(c.tipo){
+        case Tipo::Iluminacao:
+            atual->prioridadeIluminacao += 1;
+        break;
+        case Tipo::Agua:
+            atual->prioridadeAgua += 1;
+        break;
+        case Tipo::Buraco:
+            atual->prioridadeBuraco += 1;
+        break;
+        default: cout << "Houve erro." << endl;
+    }
+    
     atual->prioridade += 1;
     atual->meuHash = hash;
     atual->completo = true;
 }
+
 
 
 
