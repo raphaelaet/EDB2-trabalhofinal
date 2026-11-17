@@ -8,12 +8,17 @@
 #include <cctype>
 #include <utility>
 
+#include "chamado.h"
+
 using namespace std;
 
 struct NoTrie {
     NoTrie *filhos[36];
     string meuHash = "";
     int prioridade = 0;
+    int prioridadeIluminacao = 0;
+    int prioridadeAgua = 0;
+    int prioridadeBuraco = 0;
     bool completo;
     
     NoTrie() {
@@ -44,6 +49,9 @@ public:
     
     void procurarPrefixo(const string &pfx);
     void procurarPrefixoV(const string_view &pfx);
+    
+    bool procurarSilencioso(const string &hash);
+    bool procurarSilencioso(const string_view &hash);
 };
 
 #endif
