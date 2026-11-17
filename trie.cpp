@@ -49,13 +49,13 @@ void Trie::adicionarReport(const string &hash, const Chamado &c){
     
     switch(c.tipo){
         case Tipo::Iluminacao:
-            atual->prioridadeIluminacao += 1;
+            atual->prioridadeIluminacao += c.relevancia;
         break;
         case Tipo::Agua:
-            atual->prioridadeAgua += 1;
+            atual->prioridadeAgua += c.relevancia;
         break;
         case Tipo::Buraco:
-            atual->prioridadeBuraco += 1;
+            atual->prioridadeBuraco += c.relevancia;
         break;
         default: cout << "Houve erro." << endl;
     }
@@ -87,13 +87,13 @@ void Trie::adicionarReport(const string_view &hash, const Chamado &c){
     
     switch(c.tipo){
         case Tipo::Iluminacao:
-            atual->prioridadeIluminacao += 1;
+            atual->prioridadeIluminacao += c.relevancia;
         break;
         case Tipo::Agua:
-            atual->prioridadeAgua += 1;
+            atual->prioridadeAgua += c.relevancia;
         break;
         case Tipo::Buraco:
-            atual->prioridadeBuraco += 1;
+            atual->prioridadeBuraco += c.relevancia;
         break;
         default: cout << "Houve erro." << endl;
     }
@@ -125,7 +125,8 @@ void Trie::procurarReport(const string &hash){
     }
     
     if(atual != nullptr && atual->completo == true){
-        cout << "Número de reclamções para " << hash << ": " << atual->prioridade << endl;
+        cout << "Número de reclamações total para " << hash << ": " << atual->prioridade << endl;
+        cout << "Iluminação: " << atual->prioridadeIluminacao << " | Água: " << atual->prioridadeAgua << " | Buraco: " << atual->prioridadeBuraco << endl;
     }else cout << "Reclamações para " << hash << " não existem.\n";
 }
 
@@ -148,7 +149,8 @@ void Trie::procurarReport(const string_view &hash){
     }
     
     if(atual != nullptr && atual->completo == true){
-        cout << "Número de reclamções para " << hash << ": " << atual->prioridade << endl;
+        cout << "Número de reclamações total para " << hash << ": " << atual->prioridade << endl;
+        cout << "Iluminação: " << atual->prioridadeIluminacao << " | Água: " << atual->prioridadeAgua << " | Buraco: " << atual->prioridadeBuraco << endl;
     }else cout << "Reclamações para " << hash << " não existem.\n";
 }
 
@@ -198,4 +200,52 @@ void Trie::procurarPrefixoV(const string_view &pfx){
     if(atual != nullptr) {
     cout << "Existe pelo menos uma reclamação para a área de prefixo: " << pfx << " \n";
     }
+}
+
+
+bool Trie::procurarSilencioso(const string &hash){
+    NoTrie *atual = raiz;
+    int pos;
+    
+    for(char c : hash){
+        //Se for realmente um num...
+        pos = c - '0';
+        //Se não...
+        if(pos >= 10) {
+            pos = c - 'a' + 10;
+        }
+        
+        if(atual->filhos[pos] == nullptr){
+            cout << "Reclamações para " << hash << " não existem.\n"; 
+        }
+        atual = atual->filhos[pos];
+    }
+    
+    if(atual != nullptr && atual->completo == true){
+        return true;
+    }else return false;
+}
+
+
+bool Trie::procurarSilencioso(const string_view &hash){
+    NoTrie *atual = raiz;
+    int pos;
+    
+    for(char c : hash){
+        //Se for realmente um num...
+        pos = c - '0';
+        //Se não...
+        if(pos >= 10) {
+            pos = c - 'a' + 10;
+        }
+        
+        if(atual->filhos[pos] == nullptr){
+            cout << "Reclamações para " << hash << " não existem.\n"; 
+        }
+        atual = atual->filhos[pos];
+    }
+    
+    if(atual != nullptr && atual->completo == true){
+        return true;
+    }else return false;
 }
