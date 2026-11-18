@@ -72,13 +72,15 @@ constexpr auto UNITS = GeoHash::EARTH_METERS;
 
 //Macros
 
-void macroAdicionarTrie(Trie *raiz, GeoHash::Point point, int tests){
+template <typename Estrutura>
+void macroAdicionar(Estrutura *estrutura, GeoHash::Point point, int tests){
     cout << "Entrou.\n";
     //string Hash, Hash2;
     GeoHash::buffer_t buffer;
-    Chamado ilum = {0, Tipo::Iluminacao, point};
-	Chamado agua = {0, Tipo::Agua, point};
-	Chamado bur = {0, Tipo::Buraco, point};
+    int id = 1;
+    Chamado ilum = {id++, Tipo::Iluminacao, point, 1};
+	Chamado agua = {id++, Tipo::Agua, point, 1};
+	Chamado bur = {id++, Tipo::Buraco, point, 1};
 	//Chamado ilum2 = {0, Tipo::Iluminacao, point};
 	//Chamado agua2 = {0, Tipo::Agua, point};
 	//Chamado bur2 = {0, Tipo::Buraco, point};
@@ -93,35 +95,35 @@ void macroAdicionarTrie(Trie *raiz, GeoHash::Point point, int tests){
 	
 	//Hash = GeoHash::encode(point, 12, buffer);
     
-    raiz->registrarChamado(ilum, 30.0);
-    raiz->registrarChamado(agua, 30.0);
-    raiz->registrarChamado(bur, 30.0);
+    estrutura->registrarChamado(ilum, 30.0);
+    estrutura->registrarChamado(agua, 30.0);
+    estrutura->registrarChamado(bur, 30.0);
 	
 	//GeoHash::Point point2 = point;
     
     for(int i = 0; i < tests; i++){
-        point.lat += 0.11;
-        point.lon += 0.11;
+        point.lat += 0.00037;
+        point.lon += 0.00053;
         //point2.lat -= 0.11;
         //point2.lon -= 0.11;
         
-        if(point.lat > 90.0) point.lat = (-90.0 + point.lat / 11.0);
-        if(point.lon > 180.0) point.lon = (-180.0 + point.lon / 17.0);
-        if(point.lat < -90.0) point.lat = (90.0 + point.lat / 11.0);
-        if(point.lon < -180.0) point.lon = (180.0 + point.lon / 17.0);
+        if(point.lat > -5.70) point.lat -= 0.20;
+        if(point.lon > -35.15) point.lon -= 0.14;
+        //if(point.lat < -90.0) point.lat = (90.0 + point.lat / 11.0);
+        //if(point.lon < -180.0) point.lon = (180.0 + point.lon / 17.0);
         
         /*if(point2.lat > 90.0) point2.lat = (-90.0 + point2.lat / 11.0);
         if(point2.lon > 180.0) point2.lon = (-180.0 + point2.lon / 17.0);
         if(point2.lat < -90.0) point2.lat = (90.0 - point2.lat / 11.0);
         if(point2.lon < -180.0) point2.lon = (180.0 - point2.lon / 17.0);*/
         
-        ilum = {0, Tipo::Iluminacao, point};
-        agua = {0, Tipo::Agua, point};
-	    bur = {0, Tipo::Buraco, point};
+        ilum = {id++, Tipo::Iluminacao, point, 1};
+        agua = {id++, Tipo::Agua, point, 1};
+	    bur = {id++, Tipo::Buraco, point, 1};
 	       
-	    raiz->registrarChamado(ilum, 30.0);
-        raiz->registrarChamado(agua, 30.0);
-        raiz->registrarChamado(bur, 30.0);
+	    estrutura->registrarChamado(ilum, 30.0);
+        estrutura->registrarChamado(agua, 30.0);
+        estrutura->registrarChamado(bur, 30.0);
         
         /*ilum2 = {0, Tipo::Iluminacao, point2};
         agua2 = {0, Tipo::Agua, point2};
@@ -146,46 +148,51 @@ void macroAdicionarTrie(Trie *raiz, GeoHash::Point point, int tests){
     
     auto total = fim - inicio;
     
-    cout << "Completo. Tempo: " << chrono::duration_cast<chrono::milliseconds>(total).count() << "ms. \n";
+    cout << "Completo. Tempo: " << chrono::duration_cast<chrono::milliseconds>(total).count() << "ms.\n";
 }
 
-void macroBuscarTrie(Trie *raiz, GeoHash::Point point, int tests){
+template <typename Estrutura>
+void macroBuscar(Estrutura *estrutura, GeoHash::Point point, int tests){
     cout << "Entrou (busca).\n";
-    string Hash, Hash2;
-    GeoHash::buffer_t buffer;
+    size_t totalAchados = 0;
+    //string Hash, Hash2;
+    //GeoHash::buffer_t buffer;
     
     auto inicio = chrono::steady_clock::now();
 	
-	Hash = GeoHash::encode(point, 8, buffer);
+	//Hash = GeoHash::encode(point, 8, buffer);
 	//Hash2 = GeoHash::encode(point, 8, buffer);
         
-    raiz->procurarSilencioso(Hash);
+    //raiz->consultarRaio(point, 500.0);
+    totalAchados += estrutura->consultarRaio(point, 500.0).size();
 	
 	//GeoHash::Point point2 = point;
     
     for(int i = 0; i < tests; i++){
-        point.lat += 0.11;
-        point.lon += 0.11;
+        point.lat += 0.0019;
+        point.lon += 0.0023;
         //point2.lat -= 0.11;
         //point2.lon -= 0.11;
         
-        if(point.lat > 90.0) point.lat = (-90.0 + point.lat / 11.0);
-        if(point.lon > 180.0) point.lon = (-180.0 + point.lon / 17.0);
-        if(point.lat < -90.0) point.lat = (90.0 + point.lat / 11.0);
-        if(point.lon < -180.0) point.lon = (180.0 + point.lon / 17.0);
+        if(point.lat > -5.70) point.lat -= 0.20;
+        if(point.lon > -35.15) point.lon -= 0.14;
+        //if(point.lat < -5.90) point.lat += 0.00037;
+        //if(point.lon < -35.29) point.lon += 0.00053;
         
         /*if(point2.lat > 90.0) point2.lat = (-90.0 + point2.lat / 11.0);
         if(point2.lon > 180.0) point2.lon = (-180.0 + point2.lon / 17.0);
         if(point2.lat < -90.0) point2.lat = (90.0 - point2.lat / 11.0);
         if(point2.lon < -180.0) point2.lon = (180.0 - point2.lon / 17.0);*/
         
-        Hash = GeoHash::encode(point, 8, buffer);
+        //Hash = GeoHash::encode(point, 8, buffer);
         //Hash2 = GeoHash::encode(point2, 8, buffer);
         
-        if(raiz->procurarSilencioso(Hash) == false){
+        totalAchados += estrutura->consultarRaio(point, 500.0).size();
+
+        /*if(raiz->procurarSilencioso(Hash) == false){
             cout << "Algo deu errado.\n";
             break;
-        }
+        }*/
         /*if(raiz->procurarSilencioso(Hash2) == false){
             cout << "Algo deu errado2.\n";
             break;
@@ -208,7 +215,7 @@ void macroBuscarTrie(Trie *raiz, GeoHash::Point point, int tests){
     
     auto total = fim - inicio;
     
-    cout << "Completo. Tempo: " << chrono::duration_cast<chrono::milliseconds>(total).count() << "ms. \n";
+    cout << "Completo. Tempo: " << chrono::duration_cast<chrono::milliseconds>(total).count() << "ms. | Total achados: " << totalAchados << "\n";
 }
 
 
@@ -226,8 +233,10 @@ int main(){
 	*/
 
 	Trie trie(8);
+	QuadTree qt({{-6.0, -35.4}, {-5.7, -35.1}});
 
 	//As linhas até o último "registrarChamado" podem ser comentadas
+    /*
 	cout << "Resultados Trie" << endl;
 
 	Chamado c4 = {1, Tipo::Buraco, {-5.833597, -35.203036}};
@@ -245,17 +254,20 @@ int main(){
 	cout << qt.registrarChamado(c4, 30.0) << endl;
 	cout << qt.registrarChamado(c5, 30.0) << endl;
 	cout << qt.registrarChamado(c6, 30.0) << endl;
+    */
 	
 	GeoHash::buffer_t testbuffer;
-	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
+	GeoHash::Point testPoint = { -5.833597, -35.203036 };
 	string_view testHash = GeoHash::encode(testPoint, 8, testbuffer);
 	
-	macroAdicionarTrie(&trie, testPoint, 550000);
+	macroAdicionar(&trie, testPoint, 5000);
+    macroBuscar(&trie, testPoint, 5000);
 
     //trie.procurarReport(testHash);
     
-    macroBuscarTrie(&trie, testPoint, 550000);
-	
+	macroAdicionar(&qt, testPoint, 5000);
+    macroBuscar(&qt, testPoint, 5000);
+
 	/*
 	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
 	GeoHash::buffer_t testbuffer;

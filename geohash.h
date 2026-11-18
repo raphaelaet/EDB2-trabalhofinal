@@ -5,6 +5,7 @@
 #include <array>
 #include <string_view>
 #include <string>
+#define _USE_MATH_DEFINES
 #include <cmath>
 
 namespace GeoHash {
