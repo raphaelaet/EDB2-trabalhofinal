@@ -1,6 +1,7 @@
 #include "geohash.h"
 #include "trie.h"
 #include "quadtree.h"
+#include "baseline.h"
 
 #include <iostream>
 #include <utility>
@@ -234,6 +235,7 @@ int main(){
 
 	Trie trie(8);
 	QuadTree qt({{-6.0, -35.4}, {-5.7, -35.1}});
+    Baseline bl;
 
 	//As linhas até o último "registrarChamado" podem ser comentadas
     /*
@@ -268,6 +270,8 @@ int main(){
 	macroAdicionar(&qt, testPoint, 5000);
     macroBuscar(&qt, testPoint, 5000);
 
+    macroAdicionar(&bl, testPoint, 5000);
+    macroBuscar(&bl, testPoint, 5000);
 	/*
 	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
 	GeoHash::buffer_t testbuffer;
