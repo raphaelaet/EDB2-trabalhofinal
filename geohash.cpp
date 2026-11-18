@@ -233,7 +233,7 @@ namespace GeoHash {
 
 					v.size = 4;
 
-					if (lat < bbox_center.lat){
+					if (lat > bbox_center.lat){
 						// north
 						if (lon < bbox_center.lon){
 							// north west

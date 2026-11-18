@@ -1,6 +1,6 @@
 #include "geohash.h"
 #include "trie.h"
-//#include "quadtree.h"
+#include "quadtree.h"
 
 #include <iostream>
 #include <utility>
@@ -118,20 +118,46 @@ int main(){
 	// 60 m - 2x3
 	// 50 m - 2x2
 	// 12 m - 3x2
-	auto const radius = 80;
+	// auto const radius = 80;
 	
+	/*
 	Chamado c1 = {0, Tipo::Iluminacao, {42.69210669738513, 23.32489318092748}};
 	Chamado c2 = {0, Tipo::Agua, {42.69210669738513, 23.32489318092748}};
 	Chamado c3 = {0, Tipo::Buraco, {42.69210669738513, 23.32489318092748}};
+	*/
+
+	Trie trie(8);
+
+	cout << "Resultados Trie" << endl;
+
+	Chamado c4 = {1, Tipo::Buraco, {-5.833597, -35.203036}};
+	Chamado c5 = {2, Tipo::Buraco, {-5.833795, -35.203038}}; // Esperado que sofra deduplicação por estar próximo do c4 e ser do mesmo tipo
+	Chamado c6 = {3, Tipo::Buraco ,{-5.834980, -35.203048}};
+
+	cout << trie.registrarChamado(c4, 30.0) << endl;
+	cout << trie.registrarChamado(c5, 30.0) << endl;
+	cout << trie.registrarChamado(c6, 30.0) << endl;
+
+	cout << "Resultados QuadTree" << endl;
+
+	QuadTree qt({{-6.0, -35.4}, {-5.7, -35.1}});
 	
+	cout << qt.registrarChamado(c4, 30.0) << endl;
+	cout << qt.registrarChamado(c5, 30.0) << endl;
+	cout << qt.registrarChamado(c6, 30.0) << endl;
+
+
+	
+	/*
 	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
 	GeoHash::buffer_t testbuffer;
 	Trie raiz;
+	*/
 	
 	//Podes tanto criar uma string_view quanto transformar em string (segunda linha).
 	//A primeira linha é a criação de um GeoHash sem ser baseado no struct "place" (local).
-	string_view testHash = GeoHash::encode(testPoint, 12, testbuffer);
-	string tHashString = string(testHash);
+	//string_view testHash = GeoHash::encode(testPoint, 12, testbuffer);
+	//string tHashString = string(testHash);
 	
 	//raiz.adicionarReport(testHash, c1);
 	//raiz.adicionarReport(testHash, c2);
@@ -141,8 +167,8 @@ int main(){
     //raiz.procurarPrefixo("sx8");
     
     //Limite atual testado: 325000
-    macroAdicionarTrie(&raiz, testPoint, 325000);
-    raiz.procurarReport(testHash);
+    //macroAdicionarTrie(&raiz, testPoint, 325000);
+    //raiz.procurarReport(testHash);
 	
 	//cout << testHash << endl;
 

@@ -2,153 +2,165 @@
 
 #include "geohash.h"
 #include "chamado.h"
+#include <cmath>
+#include <iostream>
 #include <memory>
 #include <vector>
-#include <cmath>
 
+// QuadTree = "árvore de quatro filhos".
+//
+// Ideia: o mapa é um retângulo. Cada retângulo (nó) guarda até `capacidade`
+// chamados. Quando passa disso, ele é dividido em 4 retângulos menores
+// (noroeste, nordeste, sudoeste, sudeste) e os chamados vão para eles.
+// Para buscar perto de um ponto, basta olhar os retângulos que encostam
+// na área da busca, em vez de percorrer todos os chamados.
 class QuadTree {
 private:
-    struct Node {
-        GeoHash::Rectangle limite;
-        vector<Chamado> chamados;
-        bool dividida = false;
-        unique_ptr<Node> nw, ne, sw, se;
+    // Constantes
+    static constexpr double METROS_POR_GRAU = 111320.0; // 1 grau de latitude ~ 111 km
+    static constexpr double PI = 3.14159265358979323846;
 
-        Node(GeoHash::Rectangle lim) : limite(lim) {}
+    // Um nó = um retângulo do mapa
+    struct No {
+        GeoHash::Rectangle limite;               // área coberta por este nó
+        std::vector<Chamado> chamados;           // chamados guardados aqui (só se for folha)
+        std::unique_ptr<No> filhos[4];           // 0=NO, 1=NE, 2=SO, 3=SE (vazios se for folha)
+
+        No(GeoHash::Rectangle area) : limite(area) {}
+
+        bool ehFolha() const { return filhos[0] == nullptr; }
     };
 
-    unique_ptr<Node> raiz;
-    size_t capacidade; 
-    size_t prof_maxima;
+    std::unique_ptr<No> raiz;
+    size_t capacidade;   // máximo de chamados por folha antes de dividir
+    size_t prof_maxima;  // limite de divisões (evita dividir para sempre)
 
-    // Verifica se uma coordenada (lat, lon) está dentro dos limites do retângulo r
-    bool contem(const GeoHash::Rectangle& r, const GeoHash::Point& p) const {
-        return (p.lat >= r.sw.lat && p.lat <= r.ne.lat && p.lon >= r.sw.lon && p.lon <= r.ne.lon);
+    // ---------- Funções auxiliares ----------
+
+    // O ponto está dentro do retângulo?
+    static bool contem(const GeoHash::Rectangle& r, const GeoHash::Point& p) {
+        return p.lat >= r.sw.lat && p.lat <= r.ne.lat &&
+               p.lon >= r.sw.lon && p.lon <= r.ne.lon;
     }
 
-    // Verifica se dois retângulos se sobrepõem
-    bool intercepta(const GeoHash::Rectangle& a, const GeoHash::Rectangle& b) const {
-        return !(a.ne.lon < b.sw.lon || a.sw.lon > b.ne.lon || a.ne.lat < b.sw.lat || a.sw.lat > b.ne.lat);
+    // Os dois retângulos se encostam/sobrepõem?
+    static bool intercepta(const GeoHash::Rectangle& a, const GeoHash::Rectangle& b) {
+        bool separados = a.ne.lon < b.sw.lon || a.sw.lon > b.ne.lon ||
+                         a.ne.lat < b.sw.lat || a.sw.lat > b.ne.lat;
+        return !separados;
     }
 
-    // Divide o nó atual em 4 sub-quadrantes e redistribui seus chamados
-    void subdividir(Node* node) {
-        double midLat = (node->limite.sw.lat + node->limite.ne.lat) / 2.0;
-        double midLon = (node->limite.sw.lon + node->limite.ne.lon) / 2.0;
-
-        node->nw = make_unique<Node>(GeoHash::Rectangle {
-            {midLat, node->limite.sw.lon},
-            {node->limite.ne.lat, midLon}
-        });
-
-        node->ne = make_unique<Node>(GeoHash::Rectangle {
-            {midLat, midLon},
-            {node->limite.ne.lat, node->limite.ne.lon}
-        });
-
-        node->sw = make_unique<Node>(GeoHash::Rectangle {
-            {node->limite.sw.lat, node->limite.sw.lon},
-            {midLat, midLon}
-        });
-
-        node->se = make_unique<Node>(GeoHash::Rectangle {
-            {node->limite.sw.lat, midLon},
-            {midLat, node->limite.ne.lon}
-        });
-
-        node->dividida = true;
-
-        for (const auto& c : node->chamados) {
-            if (contem(node->nw->limite, c.local)) {
-                node->nw->chamados.push_back(c);
-            }
-            else if (contem(node->ne->limite, c.local)) {
-                node->ne->chamados.push_back(c);
-            }
-            else if (contem(node->sw->limite, c.local)) {
-                node->sw->chamados.push_back(c);
-            }
-            else if (contem(node->se->limite, c.local)) {
-                node->se->chamados.push_back(c);
-            }
+    // Em qual dos 4 filhos o ponto cai? Devolve 0..3, ou -1 se em nenhum.
+    static int quadranteDo(const No* no, const GeoHash::Point& p) {
+        for (int i = 0; i < 4; i++) {
+            if (contem(no->filhos[i]->limite, p)) return i;
         }
-
-        node->chamados.clear();
-        
+        return -1;
     }
 
-    // Insere recursivamente um chamado na folha correspondente subdividindo se necessário até atingir o limite de profundidade
-    void inserir(Node* node, const Chamado& c, size_t prof) {
-        if (node->dividida) {
-            if (contem(node->nw->limite, c.local)) {
-                inserir(node->nw.get(), c, prof + 1);
-            }
-            else if (contem(node->ne->limite, c.local)) {
-                inserir(node->ne.get(), c, prof + 1);
-            }
-            else if (contem(node->sw->limite, c.local)) {
-                inserir(node->sw.get(), c, prof + 1);
-            }
-            else if (contem(node->se->limite, c.local)) {
-                inserir(node->se.get(), c, prof + 1);
-            }
+    // Divide um nó em 4 filhos e passa os chamados dele para os filhos.
+    void dividir(No* no) {
+        const auto& r = no->limite;
+        double meioLat = (r.sw.lat + r.ne.lat) / 2.0;
+        double meioLon = (r.sw.lon + r.ne.lon) / 2.0;
+
+        // Rectangle = { canto sudoeste, canto nordeste }
+        no->filhos[0] = std::make_unique<No>(GeoHash::Rectangle{ {meioLat, r.sw.lon}, {r.ne.lat, meioLon} }); // noroeste
+        no->filhos[1] = std::make_unique<No>(GeoHash::Rectangle{ {meioLat, meioLon}, {r.ne.lat, r.ne.lon} }); // nordeste
+        no->filhos[2] = std::make_unique<No>(GeoHash::Rectangle{ {r.sw.lat, r.sw.lon}, {meioLat, meioLon} }); // sudoeste
+        no->filhos[3] = std::make_unique<No>(GeoHash::Rectangle{ {r.sw.lat, meioLon}, {meioLat, r.ne.lon} }); // sudeste
+
+        // Os chamados antigos descem para o filho certo
+        for (const Chamado& c : no->chamados) {
+            int q = quadranteDo(no, c.local);
+            if (q != -1) no->filhos[q]->chamados.push_back(c);
         }
-        else if (!node->dividida && (node->chamados.size() < capacidade || prof >= prof_maxima)) {
-            node->chamados.push_back(c);
-        }
-        else {
-            subdividir(node);
-            inserir(node, c, prof);
-        }
+        no->chamados.clear();
     }
 
-    // Percorre apenas os quadrantes que interceptam areaBusca e filtra os chamados pela distância geodésica até o ponto centro
-    void buscar(Node* node, GeoHash::Rectangle areaBusca, GeoHash::Point centro, double raio, vector<Chamado*>& resultados) {
-        if (!intercepta(node->limite, areaBusca)) {
+    // Coloca um chamado na árvore. Devolve false se o ponto está fora do mapa.
+    bool inserir(No* no, const Chamado& c, size_t profundidade) {
+        if (!contem(no->limite, c.local)) {
+            return false;
+        }
+
+        // Já foi dividido: desce para o filho certo
+        if (!no->ehFolha()) {
+            int q = quadranteDo(no, c.local);
+            return inserir(no->filhos[q].get(), c, profundidade + 1);
+        }
+
+        // Folha com espaço (ou no limite de profundidade): guarda aqui
+        if (no->chamados.size() < capacidade || profundidade >= prof_maxima) {
+            no->chamados.push_back(c);
+            return true;
+        }
+
+        // Folha cheia: divide e tenta de novo
+        dividir(no);
+        return inserir(no, c, profundidade);
+    }
+
+    // Procura chamados a até `raio` metros de `centro`
+    // `area` é um retângulo em volta do centro, usado só para pular regiões longe demais
+    void buscar(No* no, const GeoHash::Rectangle& area, const GeoHash::Point& centro,
+                double raio, std::vector<Chamado*>& resultados) {
+        // Se o retângulo está longe da busca ele é ignorado
+        if (!intercepta(no->limite, area)) {
             return;
         }
-        else if (node->dividida) {
-            buscar(node->nw.get(), areaBusca, centro, raio, resultados);
-            buscar(node->ne.get(), areaBusca, centro, raio, resultados);
-            buscar(node->sw.get(), areaBusca, centro, raio, resultados);
-            buscar(node->se.get(), areaBusca, centro, raio, resultados);
+
+        // Nó dividido: pergunta para os 4 filhos
+        if (!no->ehFolha()) {
+            for (auto& filho : no->filhos) {
+                buscar(filho.get(), area, centro, raio, resultados);
+            }
+            return;
         }
-        else {
-            for (auto& c : node->chamados) {
-                if (GeoHash::distance(centro, c.local, GeoHash::EARTH_METERS) <= raio) {
-                    resultados.push_back(&c);
-                }
+
+        // Folha: confere a distância real de cada chamado
+        for (Chamado& c : no->chamados) {
+            if (GeoHash::distance(centro, c.local, GeoHash::EARTH_METERS) <= raio) {
+                resultados.push_back(&c);
             }
         }
-    };
+    }
 
-    public:
+public:
+    // `limite_mapa` = região que a árvore cobre. Chamados fora dela não são guardados.
+    QuadTree(GeoHash::Rectangle limite_mapa, size_t cap = 8, size_t prof_max = 14)
+        : raiz(std::make_unique<No>(limite_mapa)), capacidade(cap), prof_maxima(prof_max) {}
 
-        QuadTree(GeoHash::Rectangle limite_mapa, size_t cap = 8, size_t prof_max = 14) : 
-            capacidade(cap), prof_maxima(prof_max) {
-            raiz = make_unique<Node>(limite_mapa); // make_unique é como se fosse o new, descobri que funciona melhor nesse caso
-        }
+    // Devolve os chamados a até `raio` metros de `centro`.
+    std::vector<Chamado*> consultarRaio(GeoHash::Point centro, double raio) {
+        // Converte o raio de metros para graus e monta um retângulo em volta do centro.
+        double raioEmLat = raio / METROS_POR_GRAU;
+        double raioEmLon = raio / (METROS_POR_GRAU * std::cos(centro.lat * PI / 180.0));
 
-        vector<Chamado*> consultarRaio(GeoHash::Point centro, double raio) {
-            vector<Chamado*> resultados;
-            double dLat = raio / 111320.0; // fórmula de conversão de coordenadas
-            double dLon = raio / (111320.0 * cos(centro.lat * M_PI / 180.0));
+        GeoHash::Rectangle area = {
+            {centro.lat - raioEmLat, centro.lon - raioEmLon},
+            {centro.lat + raioEmLat, centro.lon + raioEmLon}
+        };
 
-            GeoHash::Rectangle r = { {centro.lat - dLat, centro.lon - dLon}, {centro.lat + dLat, centro.lon + dLon} };
+        std::vector<Chamado*> resultados;
+        buscar(raiz.get(), area, centro, raio, resultados);
+        return resultados;
+    }
 
-            buscar(raiz.get(), r, centro, raio, resultados);
-            return resultados;
-        }
-
-        bool registrarChamado(const Chamado& c, double raio_dedup) {
-            auto proximos = consultarRaio(c.local, raio_dedup);
-            for (Chamado* existente : proximos) {
-                if (existente->tipo == c.tipo) {
-                    existente->relevancia++;
-                    return true; 
-                }
+    // Registra um chamado
+    // Se já existe um do mesmo tipo a até `raio_dedup` metros, só aumenta a relevância dele
+    // e devolve true. Caso contrário, guarda o chamado novo e devolve false.
+    bool registrarChamado(const Chamado& c, double raio_dedup) {
+        for (Chamado* existente : consultarRaio(c.local, raio_dedup)) {
+            if (existente->tipo == c.tipo) {
+                existente->relevancia++;
+                return true;
             }
-            inserir(raiz.get(), c, 0);
-            return false; 
         }
+
+        if (!inserir(raiz.get(), c, 0)) {
+            std::cerr << "Aviso: chamado " << c.id << " esta fora do mapa da QuadTree e nao foi guardado.\n";
+        }
+        return false;
+    }
 };
