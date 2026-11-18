@@ -5,6 +5,7 @@
 #include <iostream>
 #include <utility>
 #include <random>
+#include <chrono>
 
 struct Place{
 	GeoHash::Point		point;
@@ -73,32 +74,64 @@ constexpr auto UNITS = GeoHash::EARTH_METERS;
 
 void macroAdicionarTrie(Trie *raiz, GeoHash::Point point, int tests){
     cout << "Entrou.\n";
-    string Hash, Hash2;
+    //string Hash, Hash2;
     GeoHash::buffer_t buffer;
-    Chamado ilum = {0, Tipo::Iluminacao, {0, 0}};
-	Chamado agua = {0, Tipo::Agua, {0, 0}};
-	Chamado bur = {0, Tipo::Buraco, {0, 0}};
+    Chamado ilum = {0, Tipo::Iluminacao, point};
+	Chamado agua = {0, Tipo::Agua, point};
+	Chamado bur = {0, Tipo::Buraco, point};
+	//Chamado ilum2 = {0, Tipo::Iluminacao, point};
+	//Chamado agua2 = {0, Tipo::Agua, point};
+	//Chamado bur2 = {0, Tipo::Buraco, point};
 	
-	Hash = GeoHash::encode(point, 12, buffer);
+	//Hash = GeoHash::encode(point, 12, buffer);
         
-    raiz->adicionarReport(Hash, ilum);
-    raiz->adicionarReport(Hash, agua);
-    raiz->adicionarReport(Hash, bur);
+    //raiz->adicionarReport(Hash, ilum);
+    //raiz->adicionarReport(Hash, agua);
+    //raiz->adicionarReport(Hash, bur);
+    
+    auto inicio = chrono::steady_clock::now();
 	
-	GeoHash::Point point2 = point;
+	//Hash = GeoHash::encode(point, 12, buffer);
+    
+    raiz->registrarChamado(ilum, 30.0);
+    raiz->registrarChamado(agua, 30.0);
+    raiz->registrarChamado(bur, 30.0);
+	
+	//GeoHash::Point point2 = point;
     
     for(int i = 0; i < tests; i++){
         point.lat += 0.11;
         point.lon += 0.11;
-        point2.lat -= 0.11;
-        point2.lon -= 0.11;
+        //point2.lat -= 0.11;
+        //point2.lon -= 0.11;
         
         if(point.lat > 90.0) point.lat = (-90.0 + point.lat / 11.0);
         if(point.lon > 180.0) point.lon = (-180.0 + point.lon / 17.0);
-        if(point.lat < -90.0) point.lat = (90.0 - point.lat / 11.0);
-        if(point.lon < -180.0) point.lon = (180.0 - point.lon / 17.0);
+        if(point.lat < -90.0) point.lat = (90.0 + point.lat / 11.0);
+        if(point.lon < -180.0) point.lon = (180.0 + point.lon / 17.0);
         
-        Hash = GeoHash::encode(point, 12, buffer);
+        /*if(point2.lat > 90.0) point2.lat = (-90.0 + point2.lat / 11.0);
+        if(point2.lon > 180.0) point2.lon = (-180.0 + point2.lon / 17.0);
+        if(point2.lat < -90.0) point2.lat = (90.0 - point2.lat / 11.0);
+        if(point2.lon < -180.0) point2.lon = (180.0 - point2.lon / 17.0);*/
+        
+        ilum = {0, Tipo::Iluminacao, point};
+        agua = {0, Tipo::Agua, point};
+	    bur = {0, Tipo::Buraco, point};
+	       
+	    raiz->registrarChamado(ilum, 30.0);
+        raiz->registrarChamado(agua, 30.0);
+        raiz->registrarChamado(bur, 30.0);
+        
+        /*ilum2 = {0, Tipo::Iluminacao, point2};
+        agua2 = {0, Tipo::Agua, point2};
+	    bur2 = {0, Tipo::Buraco, point2};
+        
+        raiz->registrarChamado(ilum2, 30.0);
+        raiz->registrarChamado(agua2, 30.0);
+        raiz->registrarChamado(bur2, 30.0);*/
+        
+        /*Hash = GeoHash::encode(point, 12, buffer);
         Hash2 = GeoHash::encode(point2, 12, buffer);
         
         raiz->adicionarReport(Hash, ilum);
@@ -106,10 +139,76 @@ void macroAdicionarTrie(Trie *raiz, GeoHash::Point point, int tests){
         raiz->adicionarReport(Hash, bur);
         raiz->adicionarReport(Hash2, ilum);
         raiz->adicionarReport(Hash2, agua);
-        raiz->adicionarReport(Hash2, bur);
+        raiz->adicionarReport(Hash2, bur);*/
     }
     
-    cout << "Foi.\n";
+    auto fim = chrono::steady_clock::now();
+    
+    auto total = fim - inicio;
+    
+    cout << "Completo. Tempo: " << chrono::duration_cast<chrono::milliseconds>(total).count() << "ms. \n";
+}
+
+void macroBuscarTrie(Trie *raiz, GeoHash::Point point, int tests){
+    cout << "Entrou (busca).\n";
+    string Hash, Hash2;
+    GeoHash::buffer_t buffer;
+    
+    auto inicio = chrono::steady_clock::now();
+	
+	Hash = GeoHash::encode(point, 8, buffer);
+	//Hash2 = GeoHash::encode(point, 8, buffer);
+        
+    raiz->procurarSilencioso(Hash);
+	
+	//GeoHash::Point point2 = point;
+    
+    for(int i = 0; i < tests; i++){
+        point.lat += 0.11;
+        point.lon += 0.11;
+        //point2.lat -= 0.11;
+        //point2.lon -= 0.11;
+        
+        if(point.lat > 90.0) point.lat = (-90.0 + point.lat / 11.0);
+        if(point.lon > 180.0) point.lon = (-180.0 + point.lon / 17.0);
+        if(point.lat < -90.0) point.lat = (90.0 + point.lat / 11.0);
+        if(point.lon < -180.0) point.lon = (180.0 + point.lon / 17.0);
+        
+        /*if(point2.lat > 90.0) point2.lat = (-90.0 + point2.lat / 11.0);
+        if(point2.lon > 180.0) point2.lon = (-180.0 + point2.lon / 17.0);
+        if(point2.lat < -90.0) point2.lat = (90.0 - point2.lat / 11.0);
+        if(point2.lon < -180.0) point2.lon = (180.0 - point2.lon / 17.0);*/
+        
+        Hash = GeoHash::encode(point, 8, buffer);
+        //Hash2 = GeoHash::encode(point2, 8, buffer);
+        
+        if(raiz->procurarSilencioso(Hash) == false){
+            cout << "Algo deu errado.\n";
+            break;
+        }
+        /*if(raiz->procurarSilencioso(Hash2) == false){
+            cout << "Algo deu errado2.\n";
+            break;
+        }*/
+        
+        /*if(i == 100000){
+            raiz->procurarReport(Hash);
+            raiz->procurarReport(Hash2);
+        }
+        if(i == 250000){
+            raiz->procurarReport(Hash);
+            raiz->procurarReport(Hash2);
+        }
+        if(i == 325000 - 1){
+            raiz->procurarReport(Hash);
+            raiz->procurarReport(Hash2);
+        }*/
+    }
+    auto fim = chrono::steady_clock::now();
+    
+    auto total = fim - inicio;
+    
+    cout << "Completo. Tempo: " << chrono::duration_cast<chrono::milliseconds>(total).count() << "ms. \n";
 }
 
 
@@ -128,11 +227,12 @@ int main(){
 
 	Trie trie(8);
 
+	//As linhas até o último "registrarChamado" podem ser comentadas
 	cout << "Resultados Trie" << endl;
 
 	Chamado c4 = {1, Tipo::Buraco, {-5.833597, -35.203036}};
 	Chamado c5 = {2, Tipo::Buraco, {-5.833795, -35.203038}}; // Esperado que sofra deduplicação por estar próximo do c4 e ser do mesmo tipo
-	Chamado c6 = {3, Tipo::Buraco ,{-5.834980, -35.203048}};
+	Chamado c6 = {3, Tipo::Buraco, {-5.834980, -35.203048}};
 
 	cout << trie.registrarChamado(c4, 30.0) << endl;
 	cout << trie.registrarChamado(c5, 30.0) << endl;
@@ -145,8 +245,16 @@ int main(){
 	cout << qt.registrarChamado(c4, 30.0) << endl;
 	cout << qt.registrarChamado(c5, 30.0) << endl;
 	cout << qt.registrarChamado(c6, 30.0) << endl;
+	
+	GeoHash::buffer_t testbuffer;
+	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
+	string_view testHash = GeoHash::encode(testPoint, 8, testbuffer);
+	
+	macroAdicionarTrie(&trie, testPoint, 550000);
 
-
+    //trie.procurarReport(testHash);
+    
+    macroBuscarTrie(&trie, testPoint, 550000);
 	
 	/*
 	GeoHash::Point testPoint = { 42.69210669738513, 23.32489318092748 };
