@@ -131,6 +131,9 @@ void Trie::procurarReport(const string &hash){
         atual = atual->filhos[pos];
     }
     
+    if(atual->chamados.size() >= 1){
+        cout << "Existem reclamações para " << hash << ".\n";
+    }
     /*
     if(atual != nullptr && atual->completo == true){
         cout << "Número de reclamações total para " << hash << ": " << atual->prioridade << endl;
@@ -156,6 +159,10 @@ void Trie::procurarReport(const string_view &hash){
             return; 
         }
         atual = atual->filhos[pos];
+    }
+    
+    if(atual->chamados.size() >= 1){
+        cout << "Existem reclamações para " << hash << ".\n";
     }
     
     /*
@@ -229,7 +236,10 @@ bool Trie::procurarSilencioso(const string &hash){
             pos = c - 'a' + 10;
         }
         
+        //if(atual->chamados.size() >= 1) return true;
+        
         if(atual->filhos[pos] == nullptr){
+            cout << "Filho era nullptr.\n";
             //cout << "Reclamações para " << hash << " não existem.\n"; 
             return false;
         }
@@ -254,7 +264,10 @@ bool Trie::procurarSilencioso(const string_view &hash){
             pos = c - 'a' + 10;
         }
         
+        //if(atual->chamados.size() >= 1) return true;
+        
         if(atual->filhos[pos] == nullptr){
+            cout << "Filho era nullptr.\n";
             //cout << "Reclamações para " << hash << " não existem.\n";
             return false;
         }
@@ -265,6 +278,9 @@ bool Trie::procurarSilencioso(const string_view &hash){
         return true;
     }else return false;
 }
+
+
+
 
 void Trie::coletar(NoTrie* no, GeoHash::Point centro, double raio, vector<Chamado*>& resultados) {
     if (!no) {
